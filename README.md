@@ -9,35 +9,35 @@
 可以用于在 本地编写代码，并将代码同步到远程 Linux 服务器调试运行等。
 
 ### 使用说明
-本工具支持两种使用配置使用方式：
+* 本工具支持两种使用配置使用方式：
 
-1. 命令行单个监听同步：
-	``` BASH
-	sync-dev -l D:\data\htdocs -r wuhao:123456@11.22.33.44:22/data/wuhao
-	```
-	附加 `-s` 参数则立即进行完整同步，同步完成后退出（参考参数说明）；
-	若不提供密码，则自动使用当前用户私钥进行连接登录（可用 HOME 环境变量覆盖用户路径，即：${HOME}/.ssh/id_rsa）
-	
-2. 配置文件多个监听同步
-	``` BASH
-	sync-dev -c sync.conf
-	```
-	配置文件示例：[sync.conf](https://github.com/terrywh/sync-dev/blob/master/sync.conf)
+	1. 命令行单个监听同步：
+		``` BASH
+		sync-dev -l D:\\data\\htdocs -r wuhao:123456@11.22.33.44:22/data/wuhao
+		```
+		附加 `-s` 参数则立即进行完整同步，同步完成后退出（参考参数说明）；
+		若不提供密码，例如 `wuhao@11.22.33.44/data/wuhao`，则自动使用当前用户私钥进行连接登录（可用 HOME 环境变量覆盖用户路径，即：${HOME}/.ssh/id_rsa）
+		
+	2. 配置文件多个监听同步
+		``` BASH
+		sync-dev -c sync.conf
+		```
+		配置文件示例：[sync.conf](https://github.com/terrywh/sync-dev/blob/master/sync.conf)
 
-Windows 系统可考虑使用下面脚本后台启动：
+* Windows 系统可考虑使用下面脚本后台启动：
 ```
 // sync-dev.js
 var sh = new ActiveXObject('Wscript.Shell');
 sh.Run('sync-dev.exe -c sync.conf', 0, false)
 ```
 
-使用私钥登录可靠率如下操作：
-1. 本机 ssh-keygen 生成密钥；
-2. 本机 ssh-copy-id user@xx.xx.xx.xx 建立远端公钥信任；
+* 使用私钥登录可考虑如下操作：
+	1. 本机 ssh-keygen 生成密钥；
+	2. 本机 ssh-copy-id user@xx.xx.xx.xx 建立远端公钥信任；
 
-注意：
-* 若在本地路径中使用相对路径，请确认其参照的目录为“当前工作路径”；
-* Windows 路径分隔符在 JSON 中需要转义；
+* 注意：
+	* 若在本地路径中使用相对路径，改路径相对于 “当前工作路径” 而非应用路径、或配置路径；
+	* Windows 路径分隔符某些情况需要转义后使用；
 
 ### 配置说明
 
@@ -55,7 +55,6 @@ sh.Run('sync-dev.exe -c sync.conf', 0, false)
 // remote_user - 帐号，可选，若不提供帐号，则使用当前用户
 // remote_pass - 密码，可选，若不提供密码，则使用当前账户的私钥验证登陆 ${HOME}/.ssh/id_rsa 私钥路径
 // remote_path - 远端目标目录
-
 ```
 
 ### 命令帮助
