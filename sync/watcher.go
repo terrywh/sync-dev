@@ -100,9 +100,14 @@ func (w *Watcher) coalesce() {
 }
 
 func (w *Watcher) handle(ev notify.Event, path, oldPath string) {
+	if ev == notify.Remove {
+		w.h.Remove(path)
+		return
+	}
 	file, err := os.Open(path)
 	if err != nil {
-		log.Fatal("failed to open local file:", path)
+		log.Println("[警告] 无法访问本地文件或目录:", path)
+		return
 	}
 	defer file.Close()
 	stat, err := file.Stat()
@@ -114,8 +119,6 @@ func (w *Watcher) handle(ev notify.Event, path, oldPath string) {
 			w.h.Rename(oldPath, path)
 		case notify.Create:
 			w.h.CreateDir(path)
-		case notify.Remove:
-			w.h.RemoveDir(path)
 		}
 	}else{
 		switch ev {
@@ -124,8 +127,6 @@ func (w *Watcher) handle(ev notify.Event, path, oldPath string) {
 			w.h.UploadFile(path, file)
 		case notify.Rename:
 			w.h.Rename(oldPath, path)
-		case notify.Remove:
-			w.h.RemoveFile(path)
 		}
 	}
 }

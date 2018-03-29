@@ -110,24 +110,21 @@ func (h *SftpHandler) CreateDir(lpath string) error {
 }
 // 删除远端目录（递归删除）
 // TODO 递归转循环防止层级过深
-func (h *SftpHandler) RemoveDir(lpath string) error {
+func (h *SftpHandler) Remove(lpath string) error {
 	rpath := h.MapPath(lpath)
 	files, err := h.cli.ReadDir(rpath)
 	if err != nil {
-		return err
+		// 若非目录直接删除即可
+		return h.cli.Remove(rpath)
 	}
 	for _, info := range files {
 		if info.IsDir() {
-			h.RemoveDir(rpath + "/" + info.Name())
+			h.Remove(rpath + "/" + info.Name())
 		} else {
 			h.cli.Remove(rpath + "/" + info.Name())
 		}
 	}
 	return h.cli.RemoveDirectory(rpath)
-}
-// 删除远端文件
-func (h *SftpHandler) RemoveFile(lpath string) error {
-	return h.cli.Remove(h.MapPath(lpath))
 }
 // 将本地文件传输到远端
 func (h *SftpHandler) UploadFile(lpath string, lfile *os.File) error {
@@ -163,7 +160,7 @@ func (h *SftpHandler) SyncDir(lpath string) error {
 		if err != nil {
 			h.CreateDir(lpath)
 		}else if !rstat.IsDir() {
-			h.RemoveFile(lpath)
+			h.cli.Remove(lpath)
 			h.CreateDir(lpath)
 		}
 		// 同步目录中的所有内容
@@ -178,7 +175,7 @@ func (h *SftpHandler) SyncDir(lpath string) error {
 		if err != nil || !rstat.IsDir() {
 			h.UploadFile(lpath, lfile)
 		}else{ // 远端是个目录
-			h.RemoveDir(lpath)
+			h.Remove(lpath)
 			h.UploadFile(lpath, lfile)
 		}
 	}

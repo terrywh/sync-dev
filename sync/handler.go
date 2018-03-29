@@ -8,10 +8,8 @@ type Handler interface {
 	MapPath(lpath string) string
 	// 在远端创建目录
 	CreateDir(lpath string) error
-	// 删除远端目录（递归）
-	RemoveDir(lpath string) error
-	// 删除远端文件
-	RemoveFile(lpath string) error
+	// 删除远端文件或目录（递归）
+	Remove(lpath string) error
 	// 将本地文件传输到远端 lfile 为 lpath 对应的本地文件对象
 	UploadFile(lpath string, lfile *os.File) error
 	// 重命名
