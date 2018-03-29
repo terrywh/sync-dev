@@ -1,0 +1,16 @@
+#include <iostream>
+
+class T {
+	T(T&& t) {}
+};
+
+void f() {
+	T v;
+	return v;
+}
+
+int main(int argc, char* argv[]) {
+	T a;
+	f(std::move(a));
+	return 0;
+}
