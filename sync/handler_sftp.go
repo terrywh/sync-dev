@@ -49,18 +49,23 @@ func CreateSftpHandler(localDir, remoteDir, remoteHost, remotePort, remoteUser, 
 			ssh.Password(remotePass),
 		}
 	}else{
-		user, err := user.Current()
-		if err != nil {
-			return nil, ErrBadRemoteUser
+		homedir := os.Getenv("HOME")
+		if homedir == "" {
+			usr, err := user.Current()
+			if err != nil {
+				return nil, ErrBadRemoteUser
+			}
+			homedir = usr.HomeDir
+		}else{
+			homedir, _ = filepath.Abs(homedir)
 		}
-		
-		key, err := ioutil.ReadFile(user.HomeDir + "/.ssh/id_rsa")
+		key, err := ioutil.ReadFile(homedir + "/.ssh/id_rsa")
 		if err != nil {
-			return nil, ErrBadRemoteUser
+			return nil, err
 		}
 		sig, err := ssh.ParsePrivateKey(key)
 		if err != nil {
-			return nil, ErrBadRemoteUser
+			return nil, err
 		}
 		auth = []ssh.AuthMethod{
 			ssh.PublicKeys(sig),
@@ -73,7 +78,7 @@ func CreateSftpHandler(localDir, remoteDir, remoteHost, remotePort, remoteUser, 
 		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
 	})
 	if err != nil {
-		return nil, ErrBadRemoteHost
+		return nil, err
 	}
 	fff, err := sftp.NewClient(sss)
 	if err != nil {

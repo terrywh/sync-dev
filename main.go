@@ -63,16 +63,16 @@ func parseOne() {
 	if flagOne.LocalPath == "" {
 		log.Fatal("[错误] 同步本地目录未指定")
 	}
-	p := regexp.MustCompile(`^(([^:]+):([^@]+)?@)?([^:/]+)(:(\d+))?(/[^\s]+)$`)
+	p := regexp.MustCompile(`^(([^:]+)(:([^@]+))?@)?([^:/]+)(:(\d+))?(/[^\s]+)$`)
 	s := p.FindStringSubmatch(flagOne.RemotePath)
 	if s == nil {
 		log.Fatal("[错误] 无法解析远程同步目标")
 	}
-	flagOne.RemoteHost = s[4]
+	flagOne.RemoteHost = s[5]
 	if s[6] == "" {
 		flagOne.RemotePort = 22
 	}else{
-		port, err := strconv.Atoi(s[6])
+		port, err := strconv.Atoi(s[7])
 		if err != nil || flagOne.RemotePort < 1 || flagOne.RemotePort > 65535 {
 			log.Fatal("[错误] 远程同步目标端口异常")
 		}
@@ -80,8 +80,8 @@ func parseOne() {
 	}
 	
 	flagOne.RemoteUser = s[2] // 可以为空
-	flagOne.RemotePass = s[3] // 可以为空 （使用本地私钥登录）
-	flagOne.RemotePath = s[7]
+	flagOne.RemotePass = s[4] // 可以为空 （使用本地私钥登录）
+	flagOne.RemotePath = s[8]
 
 	if flagOne.RemotePath == "" {
 		log.Fatal("[错误] 远程同步目标目录未指定")
