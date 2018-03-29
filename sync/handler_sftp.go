@@ -112,14 +112,20 @@ func (h *SftpHandler) CreateDir(lpath string) error {
 // TODO 递归转循环防止层级过深
 func (h *SftpHandler) Remove(lpath string) error {
 	rpath := h.MapPath(lpath)
+	return h.remover(rpath)
+}
+func (h *SftpHandler) remover(rpath string) error {
 	files, err := h.cli.ReadDir(rpath)
-	if err != nil {
+	
+	if err == os.ErrNotExist {
+		return nil
+	} else if err != nil {
 		// 若非目录直接删除即可
 		return h.cli.Remove(rpath)
 	}
 	for _, info := range files {
 		if info.IsDir() {
-			h.Remove(rpath + "/" + info.Name())
+			h.remover(rpath + "/" + info.Name())
 		} else {
 			h.cli.Remove(rpath + "/" + info.Name())
 		}
