@@ -21,11 +21,12 @@ var flagConf string
 // var flagRemotePass string
 var flagOne sync.Config
 var flagSync bool
+var flagLog string
 func main() {
 	flag.BoolVar(&flagHelp, "h", false, "命令行帮助")
 	flag.BoolVar(&flagHelp, "help", false, "同 -h")
-	flag.StringVar(&flagConf, "c", "", "配置文件路径，使用配置文件可一次性定义多个监听同步\n（参考 sync.conf.example）")
-	flag.StringVar(&flagConf, "config", "", "同 -c")
+	flag.StringVar(&flagConf, "config", "", "配置文件路径，使用配置文件可一次性定义多个监听同步\n（参考 sync.conf.example）")
+	flag.StringVar(&flagConf, "c", "", "同 -config")
 	
 	flag.StringVar(&flagOne.LocalPath, "local", "", "设置监听同步的本地目录")
 	flag.StringVar(&flagOne.LocalPath, "l", "", "同 -local")
@@ -36,11 +37,22 @@ func main() {
 	flag.BoolVar(&flagSync, "sync", false, "进行一次完整同步并退出（无法与 \"-config\" 同时使用）")
 	flag.BoolVar(&flagSync, "s", false, "同 -sync")
 	
+	flag.StringVar(&flagLog, "log", "", "日志输出重定向到指定的文件")
+	
 	flag.Parse()
 	// flagSync 
 	if flagHelp || flagConf == "" && flagOne.RemotePath == "" || flagConf != "" && flagSync {
 		flag.Usage()
 		return
+	}
+	
+	if flagLog != "" {
+		logFile, err := os.OpenFile(flagLog, os.O_APPEND | os.O_CREATE, 0666)
+		if err != nil {
+			log.Fatal("[错误] 无法打开日志文件")
+		}
+		defer logFile.Close()
+		log.SetOutput(logFile)
 	}
 	
 	if flagConf != "" {

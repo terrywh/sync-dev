@@ -61,10 +61,10 @@ sh.Run('sync-dev.exe -c sync.conf', 0, false)
 
 ```
   -c string
+        同 -config
+  -config string
         配置文件路径，使用配置文件可一次性定义多个监听同步
         （参考 sync.conf.example）
-  -config string
-        同 -c
   -h    命令行帮助
   -help
         同 -h
@@ -79,4 +79,6 @@ sh.Run('sync-dev.exe -c sync.conf', 0, false)
   -s    同 -sync
   -sync
         进行一次完整同步并退出（无法与 \"-config\" 同时使用）
+  -l    同 -log
+  -log  日志输出重定向到指定的文件
 ```
