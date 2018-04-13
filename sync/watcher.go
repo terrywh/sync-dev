@@ -82,9 +82,9 @@ func (w *Watcher) coalesce() {
 		}
 		el := i.Prev().Value.(notify.EventInfo) // 前置事件不同
 		// 特殊处理 重命名消息
-		if ec.Event() == el.Event() && ec.Event() == notify.Rename {
+		if el.Event() == notify.Rename && ec.Event() == notify.Rename {
 			w.handle(ec.Event(), el.Path(), ec.Path())
-		}else if ec.Event() != el.Event() || ec.Path() != el.Path() {
+		}else if ec.Event() != notify.Rename && (ec.Event() != el.Event() || ec.Path() != el.Path()) {
 			w.handle(ec.Event(), ec.Path(), "")
 		}else{
 			
