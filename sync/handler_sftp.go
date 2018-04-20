@@ -108,6 +108,10 @@ func (h *SftpHandler) MapPath(lpath string) string {
 func (h *SftpHandler) CreateDir(lpath string) error {
 	return h.cli.Mkdir(h.MapPath(lpath))
 }
+func (h *SftpHandler) CreateFile(lpath string) error {
+	_, err := h.cli.Create(h.MapPath(lpath))
+	return err
+}
 // 删除远端目录（递归删除）
 // TODO 递归转循环防止层级过深
 func (h *SftpHandler) Remove(lpath string) error {

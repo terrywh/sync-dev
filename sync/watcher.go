@@ -100,6 +100,7 @@ func (w *Watcher) coalesce() {
 }
 
 func (w *Watcher) handle(ev notify.Event, path, oldPath string) {
+	log.Println(ev, path, oldPath)
 	if ev == notify.Remove {
 		w.h.Remove(path)
 		return
@@ -123,6 +124,7 @@ func (w *Watcher) handle(ev notify.Event, path, oldPath string) {
 	}else{
 		switch ev {
 		case notify.Create:
+			w.h.CreateFile(path)
 		case notify.Write:
 			w.h.UploadFile(path, file)
 		case notify.Rename:
