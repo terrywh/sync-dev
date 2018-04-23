@@ -121,10 +121,8 @@ func (h *SftpHandler) Remove(lpath string) error {
 func (h *SftpHandler) remover(rpath string) error {
 	files, err := h.cli.ReadDir(rpath)
 	
-	if err == os.ErrNotExist {
-		return nil
-	} else if err != nil {
-		// 若非目录直接删除即可
+	if err != nil {
+		// 非目录 或不存在 直接删除即可
 		return h.cli.Remove(rpath)
 	}
 	for _, info := range files {
@@ -134,6 +132,7 @@ func (h *SftpHandler) remover(rpath string) error {
 			h.cli.Remove(rpath + "/" + info.Name())
 		}
 	}
+	log.Println(3)
 	return h.cli.RemoveDirectory(rpath)
 }
 // 将本地文件传输到远端
