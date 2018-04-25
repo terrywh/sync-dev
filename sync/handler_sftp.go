@@ -4,12 +4,11 @@ import (
 	"errors"
 	"io"
 	"io/ioutil"
-	"log"
 	"path"
 	"path/filepath"
 	"os"
 	"os/user"
-	
+	"time"
 	
 	"golang.org/x/crypto/ssh"
 	"github.com/pkg/sftp"
@@ -25,35 +24,51 @@ type SftpHandler struct {
 	con *ssh.Client
 	cli *sftp.Client
 	remoteDir string
+	remoteHost string
+	remotePort string
+	remoteUser string
+	remotePass string
 	localDir  string
 }
 
-func CreateSftpHandler(localDir, remoteDir, remoteHost, remotePort, remoteUser, remotePass string) (*SftpHandler,error) {
-	// 本地目录必须存在且可访问
-	localDir = filepath.Clean(filepath.FromSlash(localDir))
-	info, err := os.Stat(localDir)
-	if err != nil || !info.IsDir() {
-		return nil, ErrBadLocalDir
+func CreateSftpHandler(localDir, remoteDir, remoteHost, remotePort, remoteUser, remotePass string) *SftpHandler {
+	var h SftpHandler
+	h.localDir = filepath.Clean(filepath.FromSlash(localDir))
+	h.remoteDir = path.Clean(remoteDir)
+	h.remoteHost = remoteHost
+	h.remotePort = remotePort
+	if h.remotePort == "" {
+		h.remotePort = "22"
 	}
-	remoteDir = path.Clean(remoteDir)
-	if remoteUser == "" {
-		user, err := user.Current()
-		if err != nil {
-			return nil, ErrBadRemoteUser
-		}
-		remoteUser = user.Username
+	h.remoteUser = remoteUser
+	if h.remoteUser == "" {
+		user, _ := user.Current()
+		h.remoteUser = user.Username
+	}
+	h.remotePass = remotePass
+	return &h
+}
+
+func (h *SftpHandler) Dial() error {
+	// 本地目录必须存在且可访问
+	info, err := os.Stat(h.localDir)
+	if err != nil || !info.IsDir() {
+		return ErrBadLocalDir
+	}
+	if h.remoteUser == "" {
+		return ErrBadRemoteUser
 	}
 	var auth []ssh.AuthMethod
-	if remotePass != "" {
+	if h.remotePass != "" {
 		auth = []ssh.AuthMethod{
-			ssh.Password(remotePass),
+			ssh.Password(h.remotePass),
 		}
 	}else{
 		homedir := os.Getenv("HOME")
 		if homedir == "" {
 			usr, err := user.Current()
 			if err != nil {
-				return nil, ErrBadRemoteUser
+				return ErrBadRemoteUser
 			}
 			homedir = usr.HomeDir
 		}else{
@@ -61,44 +76,50 @@ func CreateSftpHandler(localDir, remoteDir, remoteHost, remotePort, remoteUser, 
 		}
 		key, err := ioutil.ReadFile(homedir + "/.ssh/id_rsa")
 		if err != nil {
-			return nil, err
+			return err
 		}
 		sig, err := ssh.ParsePrivateKey(key)
 		if err != nil {
-			return nil, err
+			return err
 		}
 		auth = []ssh.AuthMethod{
 			ssh.PublicKeys(sig),
 		}
 	}
 	// 尝试建立远程服务器连接
-	sss, err := ssh.Dial("tcp", remoteHost + ":" + remotePort, &ssh.ClientConfig{
-		User: remoteUser,
+	sss, err := ssh.Dial("tcp", h.remoteHost + ":" + h.remotePort, &ssh.ClientConfig{
+		User: h.remoteUser,
 		Auth: auth,
 		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
+		Timeout: 3 * time.Second,
 	})
 	if err != nil {
-		return nil, err
+		return err
 	}
 	fff, err := sftp.NewClient(sss)
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
-	info, err = fff.Stat(remoteDir)
+	info, err = fff.Stat(h.remoteDir)
 	if err != nil || !info.IsDir() {
-		return nil, ErrBadRemoteDir
+		return ErrBadRemoteDir
 	}
-	return &SftpHandler{
-		con: sss,
-		cli: fff,
-		remoteDir: remoteDir,
-		localDir: localDir,
-	}, nil
+	h.con = sss
+	h.cli = fff
+	return nil
 }
 
 func (h *SftpHandler) Close() error {
 	h.cli.Close()
 	return h.con.Close()
+}
+
+func (h *SftpHandler) IsConnectionFailed(err error) bool {
+	switch err.Error() {
+	case "failed to send packet header: EOF":
+		return true
+	}
+	return false
 }
 
 func (h *SftpHandler) MapPath(lpath string) string {
@@ -132,7 +153,6 @@ func (h *SftpHandler) remover(rpath string) error {
 			h.cli.Remove(rpath + "/" + info.Name())
 		}
 	}
-	log.Println(3)
 	return h.cli.RemoveDirectory(rpath)
 }
 // 将本地文件传输到远端

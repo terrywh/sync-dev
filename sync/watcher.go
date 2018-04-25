@@ -19,11 +19,11 @@ type Watcher struct {
 	path  string
 	cache *list.List
 	thres *time.Timer
-	h Handler
+	h     *SftpHandler
 	c chan notify.EventInfo
 }
 // Create 生成一个新的 Watcher 对象
-func CreateWatcher(dir string, h Handler) (*Watcher,error) {
+func CreateWatcher(dir string, h *SftpHandler) (*Watcher,error) {
 	dir, err := filepath.Abs(dir)
 	if err != nil {
 		return nil, ErrBadLocalDir
@@ -67,6 +67,7 @@ func (w *Watcher) Watch() {
 			}
 			w.cache.PushBack(e)
 			w.thres.Reset(d)
+			log.Println(e)
 		}
 	}
 }
@@ -100,9 +101,10 @@ func (w *Watcher) coalesce() {
 }
 
 func (w *Watcher) handle(ev notify.Event, path, oldPath string) {
-	log.Println(ev, path, oldPath)
+	var err error
 	if ev == notify.Remove {
-		w.h.Remove(path)
+		err = w.h.Remove(path)
+		w.after(err)
 		return
 	}
 	file, err := os.Open(path)
@@ -112,23 +114,40 @@ func (w *Watcher) handle(ev notify.Event, path, oldPath string) {
 	}
 	defer file.Close()
 	stat, err := file.Stat()
-	if stat == nil {
-		
+	if err != nil || stat == nil {
+		return
 	}else if stat.IsDir() {
 		switch ev {
 		case notify.Rename:
-			w.h.Rename(oldPath, path)
+			err = w.h.Rename(oldPath, path)
 		case notify.Create:
-			w.h.CreateDir(path)
+			err = w.h.CreateDir(path)
 		}
 	}else{
 		switch ev {
 		case notify.Create:
-			w.h.CreateFile(path)
+			err = w.h.CreateFile(path)
 		case notify.Write:
-			w.h.UploadFile(path, file)
+			err = w.h.UploadFile(path, file)
 		case notify.Rename:
-			w.h.Rename(oldPath, path)
+			err = w.h.Rename(oldPath, path)
 		}
+	}
+	w.after(err)
+}
+func (w *Watcher) after(err error) {
+	if err != nil && w.h.IsConnectionFailed(err) {
+		i := 0
+		for {
+			i++;
+			log.Printf("[警告] 远程连接异常，正在尝试 (%d) ...\n", i)
+			w.h.Close()
+			err = w.h.Dial()
+			if err == nil {
+				break
+			}
+			time.Sleep(time.Duration(2 + i*2) * time.Second)
+		}
+		log.Println("[警告] 连接已恢复.")
 	}
 }

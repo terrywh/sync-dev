@@ -19,7 +19,7 @@ type Config struct {
 }
 
 type Sync struct {
-	h  Handler
+	h *SftpHandler
 	w *Watcher
 	c *Config
 }
@@ -58,16 +58,17 @@ func appendSync(c *Config) {
 	s.c = c
 	
 	log.Printf("远程目标: %s:%d%s", s.c.RemoteHost, s.c.RemotePort, s.c.RemotePath)
-	h, err := CreateSftpHandler(s.c.LocalPath, s.c.RemotePath, s.c.RemoteHost, fmt.Sprintf("%d", s.c.RemotePort), s.c.RemoteUser, s.c.RemotePass)
+	h := CreateSftpHandler(s.c.LocalPath, s.c.RemotePath, s.c.RemoteHost, fmt.Sprintf("%d", s.c.RemotePort), s.c.RemoteUser, s.c.RemotePass)
+	err := h.Dial()
 	if err != nil {
-		log.Fatal("[错误] 无法创建 SFTP 处理句柄: ", err)
+		log.Fatal("[错误] 无法正确完成 SFTP 处理器初始化: ", err)
 	}
 	s.h = h
 	log.Println("本地路径:", s.c.LocalPath)
 	w, err := CreateWatcher(s.c.LocalPath, h)
 	if err != nil {
 		s.h.Close()
-		log.Fatal("[错误] 无法创建本地文件监听: ", err)
+		log.Fatal("[错误] 无法监听本地文件目录: ", err)
 	}
 	s.w = w
 	syncs = append(syncs, s)
