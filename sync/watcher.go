@@ -126,7 +126,9 @@ func (w *Watcher) handle(ev notify.Event, path, oldPath string) {
 	}else{
 		switch ev {
 		case notify.Create:
-			err = w.h.CreateFile(path)
+			// err = w.h.CreateFile(path)
+			// log.Println(stat)
+			fallthrough
 		case notify.Write:
 			err = w.h.UploadFile(path, file)
 		case notify.Rename:
