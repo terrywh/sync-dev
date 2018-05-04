@@ -85,6 +85,9 @@ func (w *Watcher) coalesce() {
 		// 特殊处理 重命名消息
 		if el.Event() == notify.Rename && ec.Event() == notify.Rename {
 			w.handle(ec.Event(), el.Path(), ec.Path())
+		}else if ec.Event() == notify.Write && el.Event() == notify.Create &&
+			ec.Path() == el.Path() {
+			// 连续的 create  + write 则 write 可以不处理
 		}else if ec.Event() != notify.Rename && (ec.Event() != el.Event() || ec.Path() != el.Path()) {
 			w.handle(ec.Event(), ec.Path(), "")
 		}else{
@@ -122,12 +125,15 @@ func (w *Watcher) handle(ev notify.Event, path, oldPath string) {
 			err = w.h.Rename(oldPath, path)
 		case notify.Create:
 			err = w.h.CreateDir(path)
+			// 移动文件夹时需要同步内容
+			names, _ := file.Readdirnames(1)
+			if len(names) > 0 {
+				w.h.SyncDir(path)
+			}
 		}
 	}else{
 		switch ev {
 		case notify.Create:
-			// err = w.h.CreateFile(path)
-			// log.Println(stat)
 			fallthrough
 		case notify.Write:
 			err = w.h.UploadFile(path, file)
