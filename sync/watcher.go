@@ -85,9 +85,10 @@ func (w *Watcher) coalesce() {
 		// 特殊处理 重命名消息
 		if el.Event() == notify.Rename && ec.Event() == notify.Rename {
 			w.handle(ec.Event(), el.Path(), ec.Path())
-		}else if ec.Event() == notify.Write && el.Event() == notify.Create &&
+		}else if ec.Event() == notify.Write && 
+			(el.Event() == notify.Create || el.Event() == notify.Write) &&
 			ec.Path() == el.Path() {
-			// 连续的 create  + write 则 write 可以不处理
+			// 连续的 create/write -> write 则 write 可以不处理
 		}else if ec.Event() != notify.Rename && (ec.Event() != el.Event() || ec.Path() != el.Path()) {
 			w.handle(ec.Event(), ec.Path(), "")
 		}else{
